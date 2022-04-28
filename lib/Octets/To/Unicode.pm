@@ -14,25 +14,43 @@ use Encode qw//;
 
 #@category Кодировка
 
+# Определяет кодировку. В koi8-r и в cp1251 большие и малые буквы как бы поменялись местами, поэтому у правильной кодировки вес будет больше
+sub _bohemy {
+	my ($s) = @_;
+	my $c = 0;
+	while($s =~ /[а-яё]+/gi) {
+		my $x = $&;
+		if($x =~ /^[А-ЯЁа-яё][а-яё]*$/) { $c++ } else { $c-- }
+	}
+	$c
+}
+
 # Определить кодировку и декодировать
 sub decode(@) {
 	my ($octets, $encodings) = @_;
+	
+	return if !length $octets;
 	
 	utf8::encode($octets) if utf8::is_utf8($octets);
 	
 	$encodings //= [qw/utf-8 cp1251 koi8-r/];
 	
-	my $mem_encoding;
+	my @x = grep length $_->[0], map { eval { [ Encode::decode( $_, $octets, Encode::FB_CROAK ), $_ ] } } @$encodings;
 	
-	for my $encoding ( @$encodings ) {
-		eval {
-			$octets = Encode::decode( $encoding, $octets, Encode::FB_CROAK );
-			$mem_encoding = $encoding;
-		};
-		last if !$@;
+	my ($unicode, $mem_encoding);
+	($unicode, $mem_encoding) = @{$x[0]} if @x == 1;
+	
+	if(@x > 1) {
+		my @r = map _bohemy($_->[0]), @x;
+		
+		($unicode, $mem_encoding) = @{(sort { _bohemy($b->[0]) <=> _bohemy($a->[0]) } @x)[0]};
+		
+		print STDERR "??? ", join(", ", @r), "->", join(", ", sort {$b <=> $a} @r), " -> $unicode, $mem_encoding\n";
 	}
 	
-	wantarray? ($octets, $mem_encoding): $octets;
+	print "m=$mem_encoding\n";
+	
+	wantarray? ($unicode, $mem_encoding): $unicode;
 }
 
 # Определить кодировку

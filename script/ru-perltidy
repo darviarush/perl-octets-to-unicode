@@ -18,7 +18,7 @@ my $parse_options_ok = GetOptions(
     'help|h' => \( my $help = 0 ),
     'man'      => \( my $man  = 0 ),
 
-    'e|ext=s'  => \( my $ext = 'pm,pl,t,' ),
+    'e|ext=s'  => \( my $ext = 'pm,pl,plx,t,' ),
     'n|encodings=s'  => \( my $encodings = 'utf-8,cp1251,koi8-r' ),
     'b|in-branch' => \( my $in_branch ),
 );
@@ -47,14 +47,14 @@ else {
 		@files = map { file_find $_ }
 			map { s/^\s*[\w\?]+\s+//; $_ } grep { !/^\s*D / } split /\n/, `git status -s` if !$in_branch;
 		
-		@files = grep /($ext)$/, @files;
+		@files = grep test_perl_script($_), grep /($ext)$/, @files;
 	}
 	
 	for my $file (@files)  {
 		
-		print "$file ";
+		print "$file  ";
 		
-		my ($unicode, $encoding) = file_decode $file, \@encodings;
+		my ($unicode, $encoding) = file_decode $file, \@encodings; 
 		
 		Perl::Tidy::perltidy(
 			source      => \$unicode,
@@ -63,13 +63,22 @@ else {
 		
 		if(length $tidied_code) {
 			file_encode $file, $encoding, $tidied_code;
-			print " ", GREEN, "tidied", RESET, "\n";
+			print GREEN, "tidied", RESET, "\n";
 		} else {
-			print " ", RED, "fail", RESET, "\n";
+			print RED, "fail", RESET, "\n";
 		}		
 	}
 }
 
+# Тест: если расширение отсутствует, то 1-я строка должна содержать perl
+sub test_perl_script {
+	my ($file) = @_;
+	return 1 if $file =~ /\.[^.\/]*$/;
+	open my $f, "<", $file or die "$file: $!";
+	my $first_line = <$f>;
+	close $f;
+	return $first_line =~ /^#!.*?\bperl\b/;
+}
 
 __END__
 
@@ -102,9 +111,11 @@ Version 0.01
 	# Отформатировать указанные файлы:
 	$ ru-perltidy file1 /root/file2
 	
-С помощью опции -e (--ext) можно указать расширения файлов для форматирования (по умолчанию это pm,pl,t):
+С помощью опции -e (--ext) можно указать расширения файлов для форматирования (по умолчанию это pm,pl,plx,t,):
 
 	$ ru-perltidy -e pm,,t
+	
+Обратите внимание на пустое расширение — оно используется для исполняемых скриптов perl, которые расширения не имеют. При наличие такого расширения будет проверяться так же первая строка файла регуляркой C</^#!.*?\bperl\b/>.
 	
 Так же можно указать кодировки и порядок в котором они будут проверяться:
 
