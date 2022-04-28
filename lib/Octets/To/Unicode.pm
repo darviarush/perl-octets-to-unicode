@@ -48,12 +48,8 @@ sub file_find($) {
 	my ($file) = @_;
 	if(-d $file) {
 		$file =~ s!/$!!;
-		my @file;
-		my @dir = <$file/*>;
-		shift @dir;
-		return @file, map file_find($_), @dir;
+		map file_find($_), <$file/*>;
 	} else {
-		print "file=$file\n";
 		$file
 	}
 }

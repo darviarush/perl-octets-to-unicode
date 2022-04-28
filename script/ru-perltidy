@@ -57,7 +57,7 @@ else {
 		
 		my $code = `$command`;
 		file_encode $file, $encoding, $code;
-		unlink $TMP_FILE;
+		#unlink $TMP_FILE;
 	}
 }
 
