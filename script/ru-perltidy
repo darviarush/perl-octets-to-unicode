@@ -1,0 +1,154 @@
+#!/usr/bin/env perl
+
+use strict;
+use warnings;
+use utf8;
+
+use open qw/:std :utf8/;
+
+use Getopt::Long qw(:config no_ignore_case);
+use Pod::Usage;
+use Octets::To::Unicode;
+
+
+my $parse_options_ok = GetOptions(
+    'help|h' => \( my $help = 0 ),
+    'man'      => \( my $man  = 0 ),
+
+    'e|ext=s'  => \( my $ext = 'pm,pl,t,' ),
+    'n|encodings=s'  => \( my $encodings = 'utf-8,cp1251,koi8-r' ),
+    'b|in-branch' => \( my $in_branch ),
+);
+
+if ( !$parse_options_ok ) {
+    pod2usage(2);
+}
+elsif ($help) {
+    pod2usage( -sections => "NAME|SYNOPSIS|DESCRIPTION|OPTIONS|SUBCOMMANDS", -verbose => 99 );
+}
+elsif ($man) {
+    pod2usage( -exitval => 0, -verbose => 2 );
+}
+else {
+	
+	$ext =~ y/,/\|/;
+	my @encodings = split /,/, $encodings;
+	
+	my @files = @ARGV;
+	
+	if(!@files) {
+		@files = grep length, split "\n", `git diff --name-only --diff-filter=AM origin/master...` if $in_branch;
+	
+		@files = map { file_find $_ }
+			map { s/^\s*[\w\?]+\s+//; $_ } grep { !/^\s*D / } split /\n/, `git status -s` if !$in_branch;
+		
+		@files = grep /\.($ext)$/, @files;
+	}
+	
+	my $TMP_FILE = "/tmp/ru-perltidy";
+	
+	for my $file (@files)  {
+		
+		my ($unicode, $encoding) = file_decode $file, \@encodings;
+		file_write $TMP_FILE, $unicode;
+		
+		my $command = "perltidy -f \"$TMP_FILE\" -st";
+		print "$command\n";
+		
+		my $code = `$command`;
+		file_encode $file, $encoding, $code;
+		unlink $TMP_FILE;
+	}
+}
+
+
+__END__
+
+=encoding utf-8
+
+=head1 NAME
+
+B<ru-perltidy> - утилита для форматирования файлов perltidy с определением их кодировки.
+
+=head1 VERSION
+
+Version 0.01
+
+=head1 SYNOPSIS
+
+    ru-perltidy [-h] [--man] [<files> ...] [--ext exts] [--in-branch]
+
+=head1 DESCRIPTION
+
+Форматирует файлы через perltidy c определением их кодировки.
+
+Есть 3 основные режима работы:
+
+	# Отформатировать все изменённые, но ещё не закомиченные файлы:
+	$ ru-perltidy
+	
+	# Отформатировать изменённые и закомиченные файлы в ветке (branch-е):
+	$ ru-perltidy --branch
+
+	# Отформатировать указанные файлы:
+	$ ru-perltidy file1 /root/file2
+	
+С помощью опции -e (--ext) можно указать расширения файлов для форматирования (по умолчанию это pm,pl,t):
+
+	$ ru-perltidy -e pm,,t
+	
+Так же можно указать кодировки и порядок в котором они будут проверяться:
+
+	$ ru-perltidy -n cp1251,utf-8
+
+=head2 OPTIONS
+
+=over 4
+
+=item B<-h>, B<--help>
+
+Показать помощь и выйти.
+
+=item B<--man>
+
+Распечатать мануал и завершиться.
+
+=item B<-e> <exts>, B<--ext> <exts>
+
+Список расширений через запятую.
+
+По умолчанию: B<pm,pl,t,>.
+
+Пустое расширение обозначает файлы без расширений.
+
+=item B<-n> <encodings>, B<--encodings> <encodings>
+
+Список кодировок через запятую.
+
+По умолчанию: B<utf-8,cp1251,koi8-r>.
+
+=item B<-b>, B<--in-branch>
+
+Форматировать изменённые и закомиченные файлы в ветке (branch-е).
+
+=back
+
+=head2 ARGS
+
+=over 4
+
+=item B<files>...
+
+Файлы или директории с файлами, которые нужно отформатировать.
+
+=back
+
+=head1 LICENSE
+
+⚖ B<GPLv3>
+
+=head1 AUTHOR
+
+Yaroslav O. Kosmina E<lt>darviarush@mail.ruE<gt>
+
+=cut

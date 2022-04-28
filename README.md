@@ -17,8 +17,8 @@ $ ru-perltidy --git
 # Форматирует изменённые файлы в последнем комите (на случай, если забыл отформатировать перед комитом):
 $ ru-perltidy --git-head
 
-# Создать временные файлы в кодировке utf-8 в /tmp и после изменения переписать обратно в определённой кодировке:
-$ ru-conv file1 file2 by perltidy {} 
+# Перевести файлы во временные в кодировке utf-8 (в /tmp) и после изменения переписать обратно в определённой кодировке:
+$ ru-utf8 file1 file2 by perltidy {} 
 
 ```
 
@@ -43,10 +43,10 @@ die "Что-то пошло не так!" if $utf8 ne $unicode;
 
 Octets::To::Unicode — модуль для конвертирования 
 
-# AUTHOR
-
-Yaroslav O. Kosmina <darviarush@mail.ru>
-
 # LICENSE
 
 ⚖ **GPLv3**
+
+# AUTHOR
+
+Yaroslav O. Kosmina <darviarush@mail.ru>
