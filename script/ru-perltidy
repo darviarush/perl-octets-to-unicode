@@ -7,7 +7,10 @@ use utf8;
 use open qw/:std :utf8/;
 
 use Getopt::Long qw(:config no_ignore_case);
+use Perl::Tidy;
 use Pod::Usage;
+use Term::ANSIColor qw/:constants/;
+
 use Octets::To::Unicode;
 
 
@@ -30,30 +33,26 @@ elsif ($man) {
     pod2usage( -exitval => 0, -verbose => 2 );
 }
 else {
-
-	use DDP;
 	
 	my @encodings = split /,/, $encodings;
 	
 	my @files = @ARGV;
 	
 	if(!@files) {
-		$ext =~ y/,/\|/;
+		$ext =~ s/^(.*),$/,$1/;
+		$ext = join "|", map { $_ eq ""? '': "\\.$_" } split /,/, $ext;
 			
 		@files = grep length, split "\n", `git diff --name-only --diff-filter=AM origin/master...` if $in_branch;
 	
 		@files = map { file_find $_ }
 			map { s/^\s*[\w\?]+\s+//; $_ } grep { !/^\s*D / } split /\n/, `git status -s` if !$in_branch;
 		
-		@files = grep /\.($ext)$/, @files;
+		@files = grep /($ext)$/, @files;
 	}
 	
-	#my $TMP_FILE = "/tmp/ru-perltidy";
-	
-
-	p @files;
-	
 	for my $file (@files)  {
+		
+		print "$file ";
 		
 		my ($unicode, $encoding) = file_decode $file, \@encodings;
 		
@@ -62,18 +61,12 @@ else {
 			destination => \my $tidied_code,
 		);
 		
-		print "=================================================\n";
-		print $tidied_code;
-		
-		#file_write $TMP_FILE, $unicode;
-		
-		#my $command = "perltidy -f \"$TMP_FILE\" -st";
-		#print "$command\n";
-		
-		#my $code = `$command`;
-		#print $code;
-		#file_encode $file, $encoding, $code;
-		#unlink $TMP_FILE;
+		if(length $tidied_code) {
+			file_encode $file, $encoding, $tidied_code;
+			print " ", GREEN, "tidied", RESET, "\n";
+		} else {
+			print " ", RED, "fail", RESET, "\n";
+		}		
 	}
 }
 
