@@ -16,6 +16,7 @@ my $parse_options_ok = GetOptions(
     'help|h' => \( my $help = 0 ),
     'man'    => \( my $man  = 0 ),
 
+	'e|ext=s'       => \( my $ext       = 'pm,pl,plx,t,' ),
     'n|encodings=s' => \( my $encodings = 'utf-8,cp1251,koi8-r' ),
     'b|in-branch'   => \( my $in_branch ),
 );
@@ -84,14 +85,14 @@ else {
     exit $result;
 }
 
-# Тест: если расширение отсутствует, то 1-я строка должна содержать perl
-sub test_perl_script {
+# Тест: если расширение отсутствует, то 1-я строка должна содержать #!
+sub test_script {
     my ($file) = @_;
     return 1 if $file =~ /\.[^.\/]*$/;
     open my $f, "<", $file or die "$file: $!";
-    my $first_line = <$f>;
+	read $f, my $buf, 2;
     close $f;
-    return $first_line =~ /^#!.*?\bperl\b/;
+    return $buf eq "#!";
 }
 
 __END__

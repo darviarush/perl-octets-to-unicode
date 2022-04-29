@@ -147,7 +147,9 @@ Version 0.01
 =over 4
 
 =item C<equals> — код в файле совпадает с отформатированным C<perltidy>.
+
 =item C<tidied> — код в файле отформатирован C<perltidy>.
+
 =item C<failed> — что-то пошло не так.
 
 =back
@@ -166,7 +168,7 @@ Version 0.01
 
 Распечатать мануал и завершиться.
 
-=item B<-e> <exts>, B<--ext> <exts>
+=item B<-e> exts, B<--ext> exts
 
 Список расширений через запятую.
 
@@ -174,7 +176,7 @@ Version 0.01
 
 Пустое расширение обозначает файлы без расширений.
 
-=item B<-n> <encodings>, B<--encodings> <encodings>
+=item B<-n> encodings, B<--encodings> encodings
 
 Список кодировок через запятую.
 
