@@ -63,7 +63,8 @@ else {
 	my $max_length = max map length, @files;
 
 	if($overall) {
-		 = map { [file_decode $_, \@encodings] } ;
+		
+		 = map { my () = file_decode $_, \@encodings;  } ;
 		
 		`$command`;
 		exit $?;
