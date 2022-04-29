@@ -2,6 +2,10 @@
 
 `perl-octets-to-unicode` — утилиты для конвертирования файлов и строк в utf8.
 
+# VERSION
+
+1.0
+
 # SYNOPSIS
 
 ```sh

@@ -19,6 +19,8 @@ my $parse_options_ok = GetOptions(
 	'e|ext=s'       => \( my $ext       = 'pm,pl,plx,t,' ),
     'n|encodings=s' => \( my $encodings = 'utf-8,cp1251,koi8-r' ),
     'b|in-branch'   => \( my $in_branch ),
+    'c|command=s'   => \( my $command ),
+    'o|overall'   => \( my $overall ),
 );
 
 if ( !$parse_options_ok ) {
@@ -32,6 +34,9 @@ elsif ($help) {
 }
 elsif ($man) {
     pod2usage( -exitval => 0, -verbose => 2 );
+}
+elsif(!$command) {
+	print STDERR "use: ru-utf8 -c 'command'\n";
 }
 else {
 
@@ -52,37 +57,42 @@ else {
           `git status -s`
           if !$in_branch;
 
-        @files = grep test_perl_script($_), grep /($ext)$/, @files;
+        @files = grep test_script($_), grep /($ext)$/, @files;
     }
 
-    my $result     = 0;
-    my $max_length = max map length, @files;
+	my $max_length = max map length, @files;
 
-    for my $file (@files) {
-
-        print "$file  ", " " x ( $max_length - length $file );
-
-        my ( $unicode, $encoding ) = file_decode $file, \@encodings;
-
-        Perl::Tidy::perltidy(
-            source      => \$unicode,
-            destination => \my $tidied_code,
-        );
-
-        if ( $unicode eq $tidied_code ) {
-            print YELLOW, "equals", RESET, " in $encoding\n";
-        }
-        elsif ( length $tidied_code ) {
-            file_encode $file, $encoding, $tidied_code;
-            print GREEN, "tidied", RESET, " in $encoding\n";
-        }
-        else {
-            print RED, "failed", RESET, " in $encoding\n";
-            $result = 1;
-        }
-    }
-
-    exit $result;
+	if($overall) {
+		 = map { [file_decode $_, \@encodings] } ;
+		
+		`$command`;
+		exit $?;
+	} 
+    
+	my $TMP_FILE = "/tmp/RU-UTF8.TMP";
+	
+	$command =~ s!\$1|\$\{1\}!$TMP_FILE!g;
+	
+	print "\n";
+	
+	my $result = 0;
+	
+	for my $file ( @files ) {
+		
+		print "$file  ", " " x ( $max_length - length $file ), " in ", YELLOW, $encoding, RESET, "\n";
+		
+		my ($unicode, $encoding) = file_decode $file, \@encodings;
+		file_write $TMP_FILE, $unicode;
+		
+		system $command;
+		
+		$result += $?;
+		print WHITE, "[ ", RED, "FAIL", RESET, " # $? ", WHITE, " ]", "RESET", "\n" if $?;
+		
+		file_encode $file, $encoding, $unicode if !$?;
+	}
+	
+	exit $result;
 }
 
 # Тест: если расширение отсутствует, то 1-я строка должна содержать #!
@@ -101,7 +111,7 @@ __END__
 
 =head1 NAME
 
-B<ru-perltidy> - утилита для форматирования файлов perltidy с определением их кодировки.
+B<ru-utf8> - утилита подмены файлов в национальных кодировках на файлы в .
 
 =head1 VERSION
 
@@ -109,32 +119,32 @@ Version 0.01
 
 =head1 SYNOPSIS
 
-    ru-perltidy [-h] [--man] [<files> ...] [--ext exts] [--in-branch]
+    ru-utf8 [-h] [--man] [<files> ...] [--ext exts] [--in-branch] --command <command>
 
 =head1 DESCRIPTION
 
-Форматирует файлы через perltidy c определением их кодировки.
+Утилита переводит файлы во временные в кодировке utf-8 (в /tmp) и после выполнения команды и их изменения переписывает обратно в определённой кодировке.
 
 Есть 3 основные режима работы:
 
-	# Отформатировать все изменённые, но ещё не закомиченные файлы:
-	$ ru-perltidy
+	# Обработать все изменённые, но ещё не закомиченные файлы:
+	$ ru-utf8 -c ''
 	
-	# Отформатировать изменённые и закомиченные файлы в ветке (branch-е):
-	$ ru-perltidy --branch
+	# Обработать изменённые и закомиченные файлы в ветке (branch-е):
+	$ ru-utf8 --branch
 
-	# Отформатировать указанные файлы:
-	$ ru-perltidy file1 /root/file2
+	# Обработать указанные файлы:
+	$ ru-utf8 file1 /root/file2
 	
 С помощью опции -e (--ext) можно указать расширения файлов для форматирования (по умолчанию это pm,pl,plx,t,):
 
-	$ ru-perltidy -e pm,,t
+	$ ru-utf8 -e pm,,t
 	
 Обратите внимание на пустое расширение — оно используется для исполняемых скриптов perl, которые расширения не имеют. При наличие такого расширения будет проверяться так же первая строка файла регуляркой C</^#!.*?\bperl\b/>.
 	
 Так же можно указать кодировки и порядок в котором они будут проверяться:
 
-	$ ru-perltidy -n cp1251,utf-8
+	$ ru-utf8 -n cp1251,utf-8
 	
 =head3 LEGENDS
 
@@ -164,9 +174,10 @@ Version 0.01
 
 По умолчанию: B<pm,pl,t,>.
 
-Пустое расширение обозначает файлы без расширений.
+Пустое расширение обозначает файлы без расширений. 
+Однако в них проверяется наличие #! в начале файла.
 
-=item B<-n> <encodings>, B<--encodings> <encodings>
+=item B<-n> encodings, B<--encodings> encodings
 
 Список кодировок через запятую.
 
@@ -175,6 +186,16 @@ Version 0.01
 =item B<-b>, B<--in-branch>
 
 Форматировать изменённые и закомиченные файлы в ветке (branch-е).
+
+=item B<-с> command, B<--command> command
+
+Команда.
+
+=item B<-o>, B<--overall>
+
+Указывает, что команда одна для всех файлов, а не для каждого по отдельности.
+
+При этом обращение к файлам происходит как в шелле: $1.
 
 =back
 
