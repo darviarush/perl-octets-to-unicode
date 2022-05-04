@@ -441,6 +441,14 @@ Cписок кодировок, которыми предлагается поп
 
 =back
 
+=head1 LINKS
+
+=over 4
+
+=item * Статья на Хабре: https://habr.com/ru/post/664308/.
+
+=back
+
 =head1 AUTHOR
 
 Yaroslav O. Kosmina E<lt>darviarush@mail.ruE<gt>
