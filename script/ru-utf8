@@ -73,7 +73,7 @@ else {
 			[$tmp_file, $_, $encoding]
 		} @files;
 
-		(my $duplicate_command = $command) =~ s!\$(\d+)|\$(\d+)\}!$tmp_files_and_encodes[$1 // $2][0]!ge;
+		(my $duplicate_command = $command) =~ s!\$(\d+)|\$\{(\d+)\}!$tmp_files_and_encodes[($1 // $2) - 1][0]!ge;
 
 		$duplicate_command =~ s!\$\*|\$\{\*\}!join " ", map $_->[0], @tmp_files_and_encodes!ge;
 
