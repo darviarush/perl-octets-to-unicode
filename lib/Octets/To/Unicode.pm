@@ -15,7 +15,7 @@ use Encode qw//;
 
 #@category Кодировка
 
-# Определяет кодировку. 
+# Определяет кодировку.
 # В koi8-r и в cp1251 большие и малые буквы как бы поменялись местами, поэтому у правильной кодировки вес будет больше
 sub bohemy($) {
     my ($s) = @_;
@@ -97,7 +97,7 @@ sub file_write(@) {
       or die "При открытии для записи $file произошла ошибка: $!.";
     print $f $unicode;
     close $f;
-	return;
+    return;
 }
 
 # Определить кодировку и декодировать файл
@@ -109,8 +109,8 @@ sub file_decode(@) {
 # Кодировать в указанной кодировке и записать в файл
 sub file_encode(@) {
     my ( $file, $encoding, $unicode ) = @_;
-	
-	utf8::decode($unicode) if !utf8::is_utf8($unicode);
+
+    utf8::decode($unicode) if !utf8::is_utf8($unicode);
 
     $unicode = Encode::encode( $encoding, $unicode ) if defined $encoding;
 
@@ -145,7 +145,7 @@ Octets::To::Unicode - модуль и утилиты ru-perltidy и ru-utf8 дл
 	file_encode "path/to/file2", "koi8-r", $file_text_in_unicode;
 
 Использование утилит:
-	
+
 	# Отформатировать указанные файлы perltidy:
 	$ ru-perltidy file1 file2
 

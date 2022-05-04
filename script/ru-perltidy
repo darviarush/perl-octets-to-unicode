@@ -18,9 +18,10 @@ my $parse_options_ok = GetOptions(
     'help|h' => \( my $help = 0 ),
     'man'    => \( my $man  = 0 ),
 
-    'e|ext=s'       => \( my $ext       = 'pm,pl,plx,t,' ),
-    'n|encodings=s' => \( my $encodings = $ENV{'RU-ENCODINGS'} // 'utf-8,cp1251,koi8-r' ),
-    'b|in-branch'   => \( my $in_branch ),
+    'e|ext=s'       => \( my $ext = 'pm,pl,plx,t,' ),
+    'n|encodings=s' =>
+      \( my $encodings = $ENV{'RU-ENCODINGS'} // 'utf-8,cp1251,koi8-r' ),
+    'b|in-branch' => \( my $in_branch ),
 );
 
 if ( !$parse_options_ok ) {

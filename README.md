@@ -6,6 +6,10 @@ Octets::To::Unicode - модуль утилит для распознавани�
 
 0.01
 
+# ARTICLE
+
+Статья на Хабре: https://habr.com/ru/post/664308/.
+
 # SYNOPSIS
 
         use Octets::To::Unicode;
