@@ -6,4 +6,6 @@ on 'test' => sub {
 
 requires 'Getopt::Long';
 requires 'Encode';
+requires 'List::Util';
 requires 'Pod::Usage';
+requires 'Term::ANSIColor';
