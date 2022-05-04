@@ -9,6 +9,7 @@ use open qw/:std :utf8/;
 use Getopt::Long qw(:config no_ignore_case);
 use Pod::Usage;
 use Term::ANSIColor qw/:constants/;
+use List::Util qw/max/;
 
 use Octets::To::Unicode;
 
@@ -16,10 +17,11 @@ my $parse_options_ok = GetOptions(
     'help|h' => \( my $help = 0 ),
     'man'    => \( my $man  = 0 ),
 
-	'e|ext=s'       => \( my $ext       = 'pm,pl,plx,t,' ),
-    'n|encodings=s' => \( my $encodings = 'utf-8,cp1251,koi8-r' ),
-    'b|in-branch'   => \( my $in_branch ),
-    'c|command=s'   => \( my $command ),
+    'e|ext=s'       => \( my $ext = 'pm,pl,plx,t,' ),
+    'n|encodings=s' =>
+      \( my $encodings = $ENV{'RU-ENCODINGS'} // 'utf-8,cp1251,koi8-r' ),
+    'b|in-branch' => \( my $in_branch ),
+    'c|command=s' => \( my $command ),
     'o|overall'   => \( my $overall ),
 );
 
@@ -35,8 +37,8 @@ elsif ($help) {
 elsif ($man) {
     pod2usage( -exitval => 0, -verbose => 2 );
 }
-elsif(!$command) {
-	print STDERR "use: ru-utf8 -c 'command'\n";
+elsif ( !$command ) {
+    print STDERR "use: ru-utf8 -c 'command'\n";
 }
 else {
 
@@ -60,40 +62,43 @@ else {
         @files = grep test_script($_), grep /($ext)$/, @files;
     }
 
-	my $max_length = max map length, @files;
+    my $max_length = max map length, @files;
 
-	if($overall) {
+    if ($overall) {
+
+        #= map { my ( $file, $encoding ) = file_decode $_, \@encodings; };
+
+        system $command;
+        exit $?;
+    }
+
+    my $TMP_FILE = "/tmp/RU-UTF8.TMP";
+
+    $command =~ s!\$1|\$\{1\}!$TMP_FILE!g;
+
+    print "\n";
+
+    my $result = 0;
+
+    for my $file (@files) {
+
+        my ( $unicode, $encoding ) = file_decode $file, \@encodings;
+        file_write $TMP_FILE, $unicode;
 		
-		 = map { my () = file_decode $_, \@encodings;  } ;
-		
-		`$command`;
-		exit $?;
-	} 
-    
-	my $TMP_FILE = "/tmp/RU-UTF8.TMP";
-	
-	$command =~ s!\$1|\$\{1\}!$TMP_FILE!g;
-	
-	print "\n";
-	
-	my $result = 0;
-	
-	for my $file ( @files ) {
-		
-		print "$file  ", " " x ( $max_length - length $file ), " in ", YELLOW, $encoding, RESET, "\n";
-		
-		my ($unicode, $encoding) = file_decode $file, \@encodings;
-		file_write $TMP_FILE, $unicode;
-		
-		system $command;
-		
-		$result += $?;
-		print WHITE, "[ ", RED, "FAIL", RESET, " # $? ", WHITE, " ]", "RESET", "\n" if $?;
-		
-		file_encode $file, $encoding, $unicode if !$?;
-	}
-	
-	exit $result;
+		print "$file  ", " " x ( $max_length - length $file ), GREEN, " in ", YELLOW,
+          $encoding, RED, " ⟶ ", RESET, $TMP_FILE, "\n";
+
+        system $command;
+
+        $result = max $?, $result;
+        print WHITE, "[ ", RED, "FAIL", RESET, " # $? ", WHITE, " ]", "RESET",
+          "\n"
+          if $?;
+
+        file_encode $file, $encoding, $unicode if !$?;
+    }
+
+    exit $result;
 }
 
 # Тест: если расширение отсутствует, то 1-я строка должна содержать #!
@@ -101,7 +106,7 @@ sub test_script {
     my ($file) = @_;
     return 1 if $file =~ /\.[^.\/]*$/;
     open my $f, "<", $file or die "$file: $!";
-	read $f, my $buf, 2;
+    read $f, my $buf, 2;
     close $f;
     return $buf eq "#!";
 }
@@ -112,7 +117,7 @@ __END__
 
 =head1 NAME
 
-B<ru-utf8> - утилита подмены файлов в национальных кодировках на файлы в .
+B<ru-utf8> - утилита подмены файлов в национальных кодировках на файлы в utf-8.
 
 =head1 VERSION
 
@@ -146,16 +151,8 @@ Version 0.01
 Так же можно указать кодировки и порядок в котором они будут проверяться:
 
 	$ ru-utf8 -n cp1251,utf-8
-	
-=head3 LEGENDS
 
-На консоль утилита выведет файлы, которые были изменены с указанием: 
-
-- C<equals> — код в файле совпадает с отформатированным C<perltidy>.
-- C<tidied> — код в файле отформатирован C<perltidy>.
-- C<failed> — что-то пошло не так.
-
-В случае, если хоть один из файлов C<failed>, код завершения процесса будет равен 1.
+`ru-utf8` возвращает максимальный код из возвращённых при запуске команды над файлами.
 
 =head2 OPTIONS
 
@@ -182,7 +179,7 @@ Version 0.01
 
 Список кодировок через запятую.
 
-По умолчанию: B<utf-8,cp1251,koi8-r>.
+По умолчанию берётся из переменной окружения B<RU-ENCODINGS>, а если она пуста, равняется: B<utf-8,cp1251,koi8-r>.
 
 =item B<-b>, B<--in-branch>
 
@@ -190,13 +187,19 @@ Version 0.01
 
 =item B<-с> command, B<--command> command
 
-Команда.
+Команда. 
+
+Обязательный параметр.
 
 =item B<-o>, B<--overall>
 
 Указывает, что команда одна для всех файлов, а не для каждого по отдельности.
 
-При этом обращение к файлам происходит как в шелле: $1.
+При этом обращение к файлам происходит как в шелле: $1, $2...
+
+Например:
+
+	ru-utf8 file1 file2 -c 'cat $1 $2'
 
 =back
 

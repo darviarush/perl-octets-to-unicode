@@ -19,7 +19,7 @@ my $parse_options_ok = GetOptions(
     'man'    => \( my $man  = 0 ),
 
     'e|ext=s'       => \( my $ext       = 'pm,pl,plx,t,' ),
-    'n|encodings=s' => \( my $encodings = 'utf-8,cp1251,koi8-r' ),
+    'n|encodings=s' => \( my $encodings = $ENV{'RU-ENCODINGS'} // 'utf-8,cp1251,koi8-r' ),
     'b|in-branch'   => \( my $in_branch ),
 );
 
@@ -180,7 +180,7 @@ Version 0.01
 
 Список кодировок через запятую.
 
-По умолчанию: B<utf-8,cp1251,koi8-r>.
+По умолчанию берётся из переменной окружения B<RU-ENCODINGS>, а если она пуста, равняется: B<utf-8,cp1251,koi8-r>.
 
 =item B<-b>, B<--in-branch>
 
