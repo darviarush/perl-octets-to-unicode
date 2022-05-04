@@ -1,18 +1,18 @@
 {
-   "abstract" : "It's new $module",
+   "abstract" : "модуль утилит для распознавания кодировки текста (в том числе в файлах) и его декодирования",
    "author" : [
       "Yaroslav O. Kosmina <darviarush@mail.ru>"
    ],
    "dynamic_config" : 0,
    "generated_by" : "Minilla/v3.1.16, CPAN::Meta::Converter version 2.150010",
    "license" : [
-      "perl_5"
+      "unknown"
    ],
    "meta-spec" : {
       "url" : "http://search.cpan.org/perldoc?CPAN::Meta::Spec",
       "version" : 2
    },
-   "name" : "Ru-Perl-Tidy",
+   "name" : "Octets-To-Unicode",
    "no_index" : {
       "directory" : [
          "t",
@@ -42,6 +42,11 @@
       },
       "runtime" : {
          "requires" : {
+            "Encode" : "0",
+            "Getopt::Long" : "0",
+            "List::Util" : "0",
+            "Pod::Usage" : "0",
+            "Term::ANSIColor" : "0",
             "perl" : "5.008001"
          }
       },
@@ -52,7 +57,21 @@
       }
    },
    "release_status" : "unstable",
+   "resources" : {
+      "bugtracker" : {
+         "web" : "https://github.com/darviarush/perl-octets-to-unicode/issues"
+      },
+      "homepage" : "https://github.com/darviarush/perl-octets-to-unicode",
+      "repository" : {
+         "type" : "git",
+         "url" : "https://github.com/darviarush/perl-octets-to-unicode.git",
+         "web" : "https://github.com/darviarush/perl-octets-to-unicode"
+      }
+   },
    "version" : "0.01",
+   "x_contributors" : [
+      "Iaroslav O. Kosmina <darviarush@ya.ru>"
+   ],
    "x_serialization_backend" : "JSON::PP version 4.06",
    "x_static_install" : 1
 }
