@@ -445,7 +445,7 @@ Cписок кодировок, которыми предлагается поп
 
 =over 4
 
-=item * Статья на Хабре: https://habr.com/ru/post/664308/.
+=item * perltidy и cp1251 / L<https://habr.com/ru/post/664308/>.
 
 =back
 
