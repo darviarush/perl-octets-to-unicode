@@ -17,11 +17,12 @@ my $parse_options_ok = GetOptions(
     'help|h' => \( my $help = 0 ),
     'man'    => \( my $man  = 0 ),
 
-    'e|ext=s'       => \( my $ext = 'pm,pl,plx,t,' ),
-    'n|encodings=s' =>
-      \( my $encodings = $ENV{'RU-ENCODINGS'} // 'utf-8,cp1251,koi8-r' ),
+    'e|ext=s'       => \( my $ext = 'pm,pl,plx,t' ),
+    'i|interpreters=s' => \( my $interpreters = 'perl,perl5' ),
+    'n|encodings=s' => \( my $encodings = $ENV{'RU-ENCODINGS'} // 'utf-8,cp1251,koi8-r' ),
     'b|in-branch' => \( my $in_branch ),
     'c|command=s' => \( my $command ),
+    's|script=s' => \( my $script ),
     'o|overall'   => \( my $overall ),
 );
 
@@ -37,30 +38,14 @@ elsif ($help) {
 elsif ($man) {
     pod2usage( -exitval => 0, -verbose => 2 );
 }
-elsif ( !$command ) {
+elsif ( !length($command) && !length($script) ) {
     print STDERR "use: ru-utf8 -c 'command'\n";
 }
 else {
 
     my @encodings = split /,/, $encodings;
 
-    my @files = @ARGV;
-
-    if ( !@files ) {
-        $ext =~ s/^(.*),$/,$1/;
-        $ext = join "|", map { $_ eq "" ? '' : "\\.$_" } split /,/, $ext;
-
-        @files = grep length, split "\n",
-          `git diff --name-only --diff-filter=AM origin/master...`
-          if $in_branch;
-
-        @files = map { file_find $_ }
-          map { s/^\s*[\w\?]+\s+//; $_ } grep { !/^\s*D / } split /\n/,
-          `git status -s`
-          if !$in_branch;
-
-        @files = grep test_script($_), grep /($ext)$/, @files;
-    }
+    my @files = @ARGV? @ARGV: test_files([$in_branch? change_files_in_branch(): change_files()], $ext, $interpreters);
 
     my $max_length = max map length, @files;
 
@@ -73,11 +58,20 @@ else {
 			[$tmp_file, $_, $encoding]
 		} @files;
 
-		(my $duplicate_command = $command) =~ s!\$(\d+)|\$\{(\d+)\}!$tmp_files_and_encodes[($1 // $2) - 1][0]!ge;
+		my $result;
+		if($command) {
+			(my $duplicate_command = $command) =~ s!\$(\d+)|\$\{(\d+)\}!$tmp_files_and_encodes[($1 // $2) - 1][0]!ge;
 
-		$duplicate_command =~ s!\$\*|\$\{\*\}!join " ", map $_->[0], @tmp_files_and_encodes!ge;
+			$duplicate_command =~ s!\$\*|\$\{\*\}!join " ", map $_->[0], @tmp_files_and_encodes!ge;
 
-        my $result = system $duplicate_command;
+			$result = system $duplicate_command;
+		} else {
+			my @t = map $_->[0], @tmp_files_and_encodes;
+			my @f = map $_->[1], @tmp_files_and_encodes;
+			my @e = map $_->[2], @tmp_files_and_encodes;
+			eval $script;
+			$result = $@? do { warn $@; 1 }: 0;
+		}
 		
 		if($result) {
 			unlink $_->[0] for @tmp_files_and_encodes;
@@ -98,7 +92,6 @@ else {
 
 		(my $tmp_file = $file) =~ s!(\.[^/.]+)?$!.ru-utf8$&!n;
 		
-		(my $duplicate_command = $command) =~ s!\$[1*]|\$\{[1*]\}!$tmp_file!g;
 
         my ( $unicode, $encoding ) = file_decode $file, \@encodings;
         file_write $tmp_file, $unicode;
@@ -106,9 +99,20 @@ else {
 		print "$file  ", " " x ( $max_length - length $file ), GREEN, " in ", YELLOW,
           $encoding, RED, " ⟶ ", RESET, $tmp_file, "\n";
 
-        system $duplicate_command;
+		my $res;
+		if(length $command) {
+			(my $duplicate_command = $command) =~ s!\$[1*]|\$\{[1*]\}!$tmp_file!g;
+			$res = system $duplicate_command;
+		}
+		else {
+			my $f = $file;
+			my $t = $tmp_file;
+			my $e = $encoding;
+			eval $script;
+			$res = $@? do { warn $@; 1 }: 0;
+		}
 
-        $result = max $?, $result;
+        $result = max $res, $result;
         print WHITE, "[ ", RED, "FAIL", RESET, " # $? ", WHITE, " ]", RESET,
           "\n"
           if $?;
@@ -118,16 +122,6 @@ else {
     }
 
     exit $result;
-}
-
-# Если расширение отсутствует, то 1-я строка должна содержать #!
-sub test_script {
-    my ($file) = @_;
-    return 1 if $file =~ /\.[^.\/]*$/;
-    open my $f, "<", $file or die "$file: $!";
-    read $f, my $buf, 2;
-    close $f;
-    return $buf eq "#!";
 }
 
 __END__
@@ -144,16 +138,24 @@ Version 0.03
 
 =head1 SYNOPSIS
 
-    ru-utf8 [-h] [--man] [<files> ...] [--ext exts] [--in-branch] --command <command>
+    ru-utf8 [-h] [--man] [<files> ...] [--ext exts] [--in-branch] [--command <command> | --script <script>]
 
 =head1 DESCRIPTION
 
 Утилита переводит файлы во временные в кодировке utf-8 (в /tmp) и после выполнения команды и их изменения переписывает обратно в определённой кодировке.
 
+Обработать файлы командой shell:
+
+	$ ru-utf8 -c '...'
+	
+Обработать файлы скриптом perl:
+	
+	$ ru-utf8 -s '...'
+
 Есть 3 основные режима работы:
 
 	# Обработать все изменённые, но ещё не закомиченные файлы:
-	$ ru-utf8 -c ''
+	$ ru-utf8
 	
 	# Обработать изменённые и закомиченные файлы в ветке (branch-е):
 	$ ru-utf8 --branch
@@ -161,11 +163,13 @@ Version 0.03
 	# Обработать указанные файлы:
 	$ ru-utf8 file1 /root/file2
 	
-С помощью опции -e (--ext) можно указать расширения файлов для форматирования (по умолчанию это pm,pl,plx,t,):
+С помощью опции -e (--ext) можно указать расширения файлов для форматирования (по умолчанию это pm,pl,plx,t):
 
-	$ ru-utf8 -e pm,,t
+	$ ru-utf8 -e pm,t
 	
-Обратите внимание на пустое расширение — оно используется для исполняемых скриптов perl, которые расширения не имеют. При наличие такого расширения будет проверяться так же первая строка файла регуляркой C</^#!.*?\bperl\b/>.
+А для файлов, которые расширений не имеют, можно указать список интерпретаторов, указываемых в первой строке скрипта (#!/usr/bin/env perl):
+
+	$ ru-utf8 -i perl,perl5
 	
 Так же можно указать кодировки и порядок в котором они будут проверяться:
 
@@ -185,14 +189,21 @@ Version 0.03
 
 Распечатать мануал и завершиться.
 
-=item B<-e> <exts>, B<--ext> <exts>
+=item B<-e> exts, B<--ext> exts
 
 Список расширений через запятую.
 
-По умолчанию: B<pm,pl,t,>.
+По умолчанию: B<pm,pl,plx,t>.
 
-Пустое расширение обозначает файлы без расширений. 
-Однако в них проверяется наличие #! в начале файла.
+Пустая строка обозначает любые расширения.
+
+=item B<-i> interpreters, B<--interpreters> interpreters
+
+Список интерпретаторов через запятую.
+
+По умолчанию: B<perl,perl5>.
+
+Пустая строка отменяет файлы без расширений.
 
 =item B<-n> encodings, B<--encodings> encodings
 
@@ -208,7 +219,13 @@ Version 0.03
 
 Команда. 
 
-Обязательный параметр.
+Обязательный параметр, если параметр -s не указан.
+
+=item B<-s> script, B<--script> script
+
+Код perl.
+
+Обязательный параметр, если параметр -c не указан.
 
 =item B<-o>, B<--overall>
 

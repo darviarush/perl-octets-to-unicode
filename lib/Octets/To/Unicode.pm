@@ -13,6 +13,7 @@ our @EXPORT =
 
 use Encode qw//;
 
+#=========================================
 #@category Кодировка
 
 # Определяет кодировку.
@@ -61,6 +62,7 @@ sub detect(@) {
     ( decode @_ )[1];
 }
 
+#=========================================
 #@category Вспомогательные функции
 
 # Ищет файлы в директориях рекурсивно
@@ -116,6 +118,60 @@ sub file_encode(@) {
 
     file_write $file, $unicode;
 }
+
+#=========================================
+#@category Функции для скриптов
+
+# Если расширение отсутствует, то 1-я строка должна содержать #!(.*)$interpreter
+# * $exts — расширения: [qw/pl pm py/]
+# * $interpreters — интерпретаторы: [qw/perl python/]
+# Примечание: $interpreters проверяются только для файлов без расширений и только если пустое расширение было в $exts
+sub test_file(@) {
+    my ($file, $exts, $interpreters) = @_;
+	
+	$exts //= [];
+	$interpreters //= [];
+	
+	my ($ext) = $file =~ /\.([^.\/]*)$/;
+	
+	return @$exts? (1 == grep {$ext eq $_} @$exts): 1 if defined $ext;
+    
+	open my $f, "<", $file or die "$file: $!";
+    read $f, my $buf, 2;
+    close($f), return 0 if $buf ne "#!";
+	
+	return 1 if !@$interpreters;
+	
+	my $first_line = <$f>;
+	close $f;
+	
+    $interpreters = join "|", @$interpreters;
+
+	$first_line =~ /.*\b($interpreters)\b/? 1: 0
+}
+
+# Тестирует файлы на соответствия расширениям
+sub test_files(@) {
+	my ($files, $exts, $interpreters) = @_;
+	
+	$exts = [split /,/, $exts] if !ref $exts;
+	$interpreters = [split /,/, $interpreters] if !ref $interpreters;
+	
+	grep test_file($_, $exts, $interpreters), @$files;
+}
+
+# Возвращает изменённые файлы в репозитории git
+sub change_files() {
+	map { file_find $_ }
+	  map { s/^\s*[\w\?]+\s+//; $_ } grep { !/^\s*D / } split /\n/,
+	  `git status -s`	
+}
+
+# Возвращает изменённые файлы в ветке
+sub change_files_in_branch() {
+	grep length, split "\n", `git diff --name-only --diff-filter=AM origin/master...`;
+}
+
 
 1;
 __END__
@@ -362,11 +418,79 @@ Cписок кодировок, которыми предлагается поп
 
 =back
 
+=head2 test_file
+
+    $is_file = test_file $file, $exts, $interpreters;
+
+Тестирует файл на соответствие указанным расширениям, а если расширения нет, то на соответсвие интерпретаторов к указанному в первой строке файла начинающейся на C<#!>.
+
+Принимает параметры:
+
+=over 4
+
+=item B<$file>
+
+Путь к файлу.
+
+Обязательный.
+
+=item B<$exts>
+
+Список расширений для сопоставления, если он пуст, то подходит любое.
+
+Необязательный. Значение по умолчанию: C<[]>.
+
+=item B<$interpreters>
+
+Список интерпретаторов для сопоставления, если он пуст, то подходит любой, главное, чтобы строка начиналась на C<#!>.
+
+Необязательный. Значение по умолчанию: C<[]>.
+
+=back
+
+=head2 test_files
+
+    @files = test_files $files, $exts, $interpreters;
+
+Тестирует файлы на соответствие указанным расширениям или интерпретаторам.
+
+Принимает параметры:
+
+=over 4
+
+=item B<$files>
+
+Список файлов. 
+
+Обязательный.
+
+=item B<$exts>
+
+Такой же как в B<test_file>.
+
+=item B<$interpreters>
+
+Такой же как в B<test_file>.
+
+=back
+
+=head2 change_files
+
+    @files = change_files();
+
+Возвращает изменённые файлы в репозитории git.
+
+=head2 change_files
+
+    @files = change_files_in_branch();
+
+Возвращает изменённые файлы в ветке.
+
 =head1 INSTALL
 
 Установить можно любым менеджером C<perl> со B<CPAN>, например:
 
-	$ cpm install -g Octets::To::Unicode
+	$ sudo cpm install -g Octets::To::Unicode
 
 =head1 DEPENDENCIES
 
