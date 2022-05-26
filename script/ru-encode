@@ -87,7 +87,7 @@ __END__
 
 =head1 NAME
 
-B<ru-encoding> - утилита группового перекодирования файлов в указанную кодировку.
+B<ru-encode> - утилита группового перекодирования файлов в указанную кодировку.
 
 =head1 VERSION
 
@@ -95,39 +95,39 @@ Version 0.05
 
 =head1 SYNOPSIS
 
-    ru-encoding [-h] [--man] [<files> ...] [--ext exts] [--interpreters interpreters] [--in-branch]
+    ru-encode [-h] [--man] [<files> ...] [--ext exts] [--interpreters interpreters] [--in-branch]
 
 =head1 DESCRIPTION
 
 Утилита определяет кодировку файла и переводит его в указанную.
 
-	$ ru-encoding -t cp1251
+	$ ru-encode -t cp1251
 
 Есть 4 основные режима работы:
 
 	# Отформатировать все изменённые, но ещё не закомиченные файлы:
-	$ ru-encoding
+	$ ru-encode
 	
 	# Обработать изменённые и закомиченные файлы в ветке (branch-е):
-	$ ru-encoding --in-branch
+	$ ru-encode --in-branch
 
 	# Обработать файлы в директориях:
-	$ ru-encoding --in-dir .,/tmp/mydir
+	$ ru-encode --in-dir .,/tmp/mydir
 
 	# Отформатировать указанные файлы:
-	$ ru-encoding file1 /root/file2
+	$ ru-encode file1 /root/file2
 	
 С помощью опции -e (--ext) можно указать расширения файлов для форматирования (по умолчанию это pm,pl,plx,t):
 
-	$ ru-encoding -e pm,t
+	$ ru-encode -e pm,t
 
 А для файлов, которые расширений не имеют, можно указать список интерпретаторов, указываемых в первой строке скрипта (#!/usr/bin/env perl):
 
-	$ ru-encoding -i perl,perl5
+	$ ru-encode -i perl,perl5
 	
 Так же можно указать кодировки и порядок в котором они будут проверяться:
 
-	$ ru-encoding -n cp1251,utf-8
+	$ ru-encode -n cp1251,utf-8
 	
 =head3 LEGENDS
 

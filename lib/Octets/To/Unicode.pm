@@ -233,7 +233,7 @@ Octets::To::Unicode - модуль и утилиты ru-perltidy и ru-utf8 дл
 	$ ru-utf8 file1 file2 -o -s 'print "@f @o @e @x"'
 	
 	# Определить кодировку файлов и перекодировать их в koi8-r:
-	$ ru-encoding -t koi8-r
+	$ ru-encode -t koi8-r
 
 =head1 DESCRIPTION
 
@@ -245,7 +245,7 @@ Octets::To::Unicode - модуль и утилиты ru-perltidy и ru-utf8 дл
 
 =item B<ru-utf8> — переводит файлы во временные (в кодировке utf-8), выполняет указанную команду и переписывает обратно в определённой кодировке;
 
-=item B<ru-encoding> — перекодирует файлы в указанную кодировку.
+=item B<ru-encode> — перекодирует файлы в указанную кодировку.
 
 =back
 
