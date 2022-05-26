@@ -188,12 +188,9 @@ Version 0.03
 	$ ru-utf8 -c 'echo $f $o $x $e'
 	$ ru-utf8 -c 'perltidy $f -st > $o'
 	
-	$ ru-utf8 -o -c 'echo $f1 $o1 $x1 $e1 -- $f2 $o2 $x2 $e2'
-	
 Обработать файлы скриптом perl:
 	
 	$ ru-utf8 -s 'print "$f $o $x $e $unicode"'
-	$ ru-utf8 -o -s 'print "@f @o @x @e"'
 
 Есть 4 основные режима работы:
 
