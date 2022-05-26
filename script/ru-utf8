@@ -104,9 +104,10 @@ s!\$(?<v>\w+)|\$\{(?<v>\w+)\}!exists $x{$+{v}}? $x{$+{v}}: $&!ge;
         }
         else {
             for (@tmp_files_and_encodes) {
-                my ( $tmp_file, $file, $encoding ) = @$_;
-                file_encode $file, $encoding, file_read $tmp_file;
-                unlink $tmp_file;
+                my ( $tmp_file_in, $file, $encoding, $tmp_file_out ) = @$_;
+                file_encode $file, $encoding, file_read $tmp_file_out;
+                unlink $tmp_file_in;
+                unlink $tmp_file_out;
             }
         }
 
