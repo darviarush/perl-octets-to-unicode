@@ -4,7 +4,7 @@ use utf8;
 use strict;
 use warnings FATAL => 'all';
 
-our $VERSION = "0.04";
+our $VERSION = "0.05";
 
 require Exporter;
 our @ISA = qw(Exporter);

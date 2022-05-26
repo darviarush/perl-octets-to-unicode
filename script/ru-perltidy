@@ -63,15 +63,16 @@ else {
 
         my ( $unicode, $encoding ) = file_decode $file, \@encodings;
 
+		local @ARGV = ();
         Perl::Tidy::perltidy(
             source      => \$unicode,
             destination => \my $tidied_code,
         );
 
-        if ( $unicode eq $tidied_code ) {
+        if ( defined $tidied_code and $unicode eq $tidied_code ) {
             print CYAN, "equals";
         }
-        elsif ( length $tidied_code ) {
+        elsif ( defined $tidied_code and length $tidied_code ) {
             file_encode $file, $encoding, $tidied_code;
             print GREEN, "tidied";
         }
@@ -96,7 +97,7 @@ B<ru-perltidy> - утилита для форматирования файлов
 
 =head1 VERSION
 
-Version 0.04
+Version 0.05
 
 =head1 SYNOPSIS
 

@@ -2,6 +2,10 @@ Revision history for Perl extension Octets-To-Unicode
 
 {{$NEXT}}
 
+0.05 2022-05-26T12:56:04Z
+
+	- Исправлен баг с @ARGV для Perl::Tidy.
+
 0.04 2022-05-26T09:06:46Z
 
 	- Усовершенствован алгоритм bohemy (определения кодировки).
